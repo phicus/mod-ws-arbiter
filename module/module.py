@@ -357,6 +357,39 @@ def do_downtime():
     # OK here it's ok, it will return a 200 code
 
 
+def do_change_host_var():
+    # Getting lists of informations for the commands
+    time_stamp          = request.forms.get('time_stamp', int(time.time()))
+    host_name           = request.forms.get('host_name', '')
+    var_name            = request.forms.get('var_name', '')
+    value               = request.forms.get('value', '')
+    logger.debug("[WS_Arbiter] Timestamp '%s' - host: '%s', var_name: '%s', value: '%s'" % (time_stamp,
+                                                                                            host_name,
+                                                                                            var_name,
+                                                                                            value
+                                                                                           )
+                )
+
+    if not host_name:
+        abort(400, 'Missing parameter host_name')
+    if not var_name:
+        abort(400, 'Missing parameter var_name')
+
+    # We check for auth if it's not anonymously allowed
+    check_auth()
+
+    command = '[%s] CHANGE_HOST_VAR;%s;%s;%s\n' % (time_stamp,
+                                                   host_name,
+                                                   var_name,
+                                                   value)
+
+    # Adding commands to the main queue()
+    logger.debug("[WS_Arbiter] command =  %s" % command)
+    ext = ExternalCommand(command)
+    app.from_q.put(ext)
+
+    # OK here it's ok, it will return a 200 code
+
 
 # This module will open an HTTP service, where a user can send a command, like a check
 # return.
@@ -397,6 +430,9 @@ class Ws_arbiter(BaseModule):
 
         if self.routes is None or 'push_check_result' in self.routes:
             route('/push_check_result', callback=get_page, method='POST')
+
+        if self.routes is None or 'change_host_var' in self.routes:
+            route('/change_host_var', callback=do_change_host_var, method='POST')
 
         if self.routes is None or 'restart' in self.routes:
             route('/restart', callback=do_restart, method='POST')
