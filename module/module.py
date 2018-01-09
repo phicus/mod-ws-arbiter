@@ -391,6 +391,38 @@ def do_change_host_var():
     # OK here it's ok, it will return a 200 code
 
 
+def do_add_simple_host_dependency():
+    # Getting lists of informations for the commands
+    time_stamp          = request.forms.get('time_stamp', int(time.time()))
+    son                 = request.forms.get('son', '')
+    father              = request.forms.get('father', '')
+    logger.debug("[WS_Arbiter] Timestamp '%s' - son: '%s', father: '%s'" % (time_stamp,
+                                                                            son,
+                                                                            father
+                                                                           )
+                )
+
+    if not son:
+        abort(400, 'Missing parameter son')
+    if not father:
+        abort(400, 'Missing parameter father')
+
+    # We check for auth if it's not anonymously allowed
+    check_auth()
+
+    command = '[%s] ADD_SIMPLE_HOST_DEPENDENCY;%s;%s\n' % (time_stamp,
+                                                           son,
+                                                           father)
+
+    # Adding commands to the main queue()
+    logger.debug("[WS_Arbiter] command =  %s" % command)
+    ext = ExternalCommand(command)
+    app.from_q.put(ext)
+
+    # OK here it's ok, it will return a 200 code
+
+
+
 # This module will open an HTTP service, where a user can send a command, like a check
 # return.
 class Ws_arbiter(BaseModule):
@@ -433,6 +465,9 @@ class Ws_arbiter(BaseModule):
 
         if self.routes is None or 'change_host_var' in self.routes:
             route('/change_host_var', callback=do_change_host_var, method='POST')
+
+        if self.routes is None or 'add_simple_host_dependency' in self.routes:
+            route('/add_simple_host_dependency', callback=do_add_simple_host_dependency, method='POST')
 
         if self.routes is None or 'restart' in self.routes:
             route('/restart', callback=do_restart, method='POST')
